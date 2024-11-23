@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Swiss System Chess Tournament Pairings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .player-entry {
+            margin-bottom: 10px;
+        }
+        .player-list {
+            margin: 20px 0;
+        }
+        .pairings {
+            margin-top: 20px;
+        }
+        .pairing {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        .pairing.completed {
+            background-color: #e0f0e0;
+        }
+        button {
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        button:hover {
+            background-color: #f0f0f0;
+        }
+        button:disabled {
+            background-color: #eee;
+            cursor: not-allowed;
+        }
+        input[type="number"] {
+            width: 80px;
+            padding: 6px;
+            margin: 2px;
+        }
+        input[type="text"] {
+            width: 200px;
+            padding: 6px;
+            margin: 2px;
+        }
+        .standings {
+            margin-top: 20px;
+        }
+        .round-info {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Swiss System Chess Tournament Pairings</h1>
+    
+    <div class="input-section">
+        <div class="player-entry">
+            <input type="text" id="playerName" placeholder="Player Name">
+            <input type="number" id="playerRating" placeholder="Rating">
+            <button onclick="addPlayer()">Add Player</button>
+        </div>
+    </div>
+
+    <div class="round-info">
+        <h3>Current Round: <span id="currentRound">0</span></h3>
+    </div>
+
+    <div class="player-list">
+        <h2>Players and Standings:</h2>
+        <div id="playersList"></div>
+    </div>
+
+    <button onclick="generatePairings()" id="generatePairingsBtn">Start Tournament</button>
+
+    <div class="pairings">
+        <h2>Current Round Pairings:</h2>
+        <div id="pairingsList"></div>
+    </div>
+
+    <script>
+        let players = [];
+        let currentRound = 0;
+        let currentPairings = [];
+        let allResultsEntered = true;
+
+        function addPlayer() {
+            const name = document.getElementById('playerName').value.trim();
+            const rating = parseInt(document.getElementById('playerRating').value);
+            
+            if (name && rating) {
+                if (players.some(p => p.name === name)) {
+                    alert('A player with this name already exists!');
+                    return;
+                }
+
+                players.push({
+                    name: name,
+                    rating: rating,
+                    score: 0,
+                    opponents: [],
+                    colorHistory: [], // positive for white, negative for black
+                    colorBalance: 0,
+                });
+                
+                document.getElementById('playerName').value = '';
+                document.getElementById('playerRating').value = '';
+                
+                displayPlayers();
+            }
+        }
+
+        function displayPlayers() {
+            const list = document.getElementById('playersList');
+            // Sort players by score (descending), then by rating (descending)
+            const sortedPlayers = [...players].sort((a, b) => {
+                if (b.score === a.score) {
+                    return b.rating - a.rating;
+                }
+                return b.score - a.score;
+            });
+
+            list.innerHTML = sortedPlayers.map((player, index) => `
+                <div class="player">
+                    ${index + 1}. ${player.name} (${player.rating}) - Score: ${player.score}
+                    ${currentRound === 0 ? `<button onclick="removePlayer('${player.name}')">Remove</button>` : ''}
+                </div>
+            `).join('');
+
+            const generateBtn = document.getElementById('generatePairingsBtn');
+            generateBtn.textContent = currentRound === 0 ? 'Start Tournament' : 'Generate Next Round';
+            generateBtn.disabled = !allResultsEntered;
+        }
+
+        function removePlayer(playerName) {
+            if (currentRound > 0) return;
+            players = players.filter(p => p.name !== playerName);
+            displayPlayers();
+        }
+
+        function findBestOpponentInGroup(player, group, pairedPlayers) {
+            for (let potential of group) {
+                if (!pairedPlayers.includes(potential.name) && 
+                    !player.opponents.includes(potential.name)) {
+                    return potential;
+                }
+            }
+            return null;
+        }
+
+        function generatePairings() {
+            if (players.length < 2) {
+                alert('Need at least 2 players to generate pairings!');
+                return;
+            }
+
+            if (!allResultsEntered && currentRound > 0) {
+                alert('Please enter all results for the current round first!');
+                return;
+            }
+
+            currentRound++;
+            document.getElementById('currentRound').textContent = currentRound;
+
+            // Sort players by score, then by rating
+            const sortedPlayers = [...players].sort((a, b) => {
+                if (b.score === a.score) {
+                    return b.rating - a.rating;
+                }
+                return b.score - a.score;
+            });
+
+            let pairings = [];
+            let pairedPlayers = [];
+
+            // Group players by score
+            const scoreGroups = {};
+            sortedPlayers.forEach(player => {
+                if (!scoreGroups[player.score]) {
+                    scoreGroups[player.score] = [];
+                }
+                scoreGroups[player.score].push(player);
+            });
+
+            // Process each score group from highest to lowest score
+            Object.entries(scoreGroups)
+                .sort(([scoreA], [scoreB]) => Number(scoreB) - Number(scoreA))
+                .forEach(([score, group]) => {
+                    // Split group into upper and lower halves
+                    const midPoint = Math.ceil(group.length / 2);
+                    const upperHalf = group.slice(0, midPoint);
+                    const lowerHalf = group.slice(midPoint);
+
+                    // Pair across halves
+                    for (let i = 0; i < upperHalf.length; i++) {
+                        if (pairedPlayers.includes(upperHalf[i].name)) continue;
+
+                        let opponent = null;
+                        if (lowerHalf.length > i) {
+                            opponent = findBestOpponentInGroup(upperHalf[i], lowerHalf, pairedPlayers);
+                        }
+                        
+                        // If no opponent found in lower half, try upper half
+                        if (!opponent && upperHalf.length > i + 1) {
+                            opponent = findBestOpponentInGroup(upperHalf[i], upperHalf.slice(i + 1), pairedPlayers);
+                        }
+
+                        if (opponent) {
+                            const player1GetsWhite = shouldGetWhite(upperHalf[i], opponent);
+                            pairings.push({
+                                white: player1GetsWhite ? upperHalf[i] : opponent,
+                                black: player1GetsWhite ? opponent : upperHalf[i],
+                                completed: false,
+                                totalScore: upperHalf[i].score + opponent.score
+                            });
+                            pairedPlayers.push(upperHalf[i].name, opponent.name);
+                        }
+                    }
+                });
+
+            // Handle remaining unpaired players
+            const unpaired = sortedPlayers.filter(p => !pairedPlayers.includes(p.name));
+            
+            // Pair any remaining players
+            while (unpaired.length >= 2) {
+                const player1 = unpaired[0];
+                let bestOpponentIndex = 1;
+                
+                for (let i = 1; i < unpaired.length; i++) {
+                    if (!player1.opponents.includes(unpaired[i].name)) {
+                        bestOpponentIndex = i;
+                        break;
+                    }
+                }
+
+                const player2 = unpaired[bestOpponentIndex];
+                const player1GetsWhite = shouldGetWhite(player1, player2);
+
+                pairings.push({
+                    white: player1GetsWhite ? player1 : player2,
+                    black: player1GetsWhite ? player2 : player1,
+                    completed: false,
+                    totalScore: player1.score + player2.score
+                });
+
+                unpaired.splice(bestOpponentIndex, 1);
+                unpaired.splice(0, 1);
+            }
+
+            // Handle bye if odd number of players
+            if (unpaired.length === 1) {
+                pairings.push({
+                    white: unpaired[0],
+                    black: null,
+                    completed: false,
+                    totalScore: unpaired[0].score
+                });
+            }
+
+            // Sort pairings by total score of the players (descending)
+            pairings.sort((a, b) => b.totalScore - a.totalScore);
+
+            currentPairings = pairings;
+            allResultsEntered = false;
+            displayPairings();
+            document.getElementById('generatePairingsBtn').disabled = true;
+        }
+
+        function shouldGetWhite(player1, player2) {
+            // If color balance is significantly different, give white to the player who has had more blacks
+            if (Math.abs(player1.colorBalance - player2.colorBalance) >= 2) {
+                return player1.colorBalance < player2.colorBalance;
+            }
+            // Otherwise, alternate colors from their last game if possible
+            if (player1.colorHistory.length > 0 && player2.colorHistory.length > 0) {
+                if (player1.colorHistory[player1.colorHistory.length - 1] < 0) {
+                    return true;
+                }
+                if (player2.colorHistory[player2.colorHistory.length - 1] < 0) {
+                    return false;
+                }
+            }
+            // Default to random if no other criteria apply
+            return Math.random() < 0.5;
+        }
+
+        function displayPairings() {
+            const list = document.getElementById('pairingsList');
+            list.innerHTML = currentPairings.map((pairing, index) => {
+                if (pairing.black === null) {
+                    return `
+                        <div class="pairing ${pairing.completed ? 'completed' : ''}">
+                            Board ${index + 1}: ${pairing.white.name} (${pairing.white.rating}) {${pairing.white.score}} - BYE
+                            ${!pairing.completed ? `<button onclick="recordResult(${index}, 'bye')">Record Bye</button>` : ''}
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="pairing ${pairing.completed ? 'completed' : ''}">
+                        Board ${index + 1}: ${pairing.white.name} (${pairing.white.rating}) {${pairing.white.score}} vs ${pairing.black.name} (${pairing.black.rating}) {${pairing.black.score}}
+                        ${!pairing.completed ? `
+                            <button onclick="recordResult(${index}, 'white')">1-0</button>
+                            <button onclick="recordResult(${index}, 'draw')">½-½</button>
+                            <button onclick="recordResult(${index}, 'black')">0-1</button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+		
+        
+        function recordResult(pairingIndex, result) {
+            const pairing = currentPairings[pairingIndex];
+            
+            if (!pairing.completed) {
+                if (result === 'bye') {
+                    // Handle bye
+                    const player = players.find(p => p.name === pairing.white.name);
+                    player.score += 1;
+                    player.colorHistory.push(1); // Count bye as white
+                    player.colorBalance += 1;
+                } else {
+                    const white = players.find(p => p.name === pairing.white.name);
+                    const black = players.find(p => p.name === pairing.black.name);
+
+                    // Record opponents
+                    white.opponents.push(black.name);
+                    black.opponents.push(white.name);
+
+                    // Record colors
+                    white.colorHistory.push(1);
+                    black.colorHistory.push(-1);
+                    white.colorBalance += 1;
+                    black.colorBalance -= 1;
+
+                    // Update scores
+                    switch (result) {
+                        case 'white':
+                            white.score += 1;
+                            break;
+                        case 'black':
+                            black.score += 1;
+                            break;
+                        case 'draw':
+                            white.score += 0.5;
+                            black.score += 0.5;
+                            break;
+                    }
+                }
+
+                pairing.completed = true;
+
+                // Check if all results are entered
+                allResultsEntered = currentPairings.every(p => p.completed);
+                document.getElementById('generatePairingsBtn').disabled = !allResultsEntered;
+
+                displayPairings();
+                displayPlayers();
+            }
+        }
+    </script>
+</body>
+</html>
