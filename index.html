@@ -61,6 +61,28 @@
             background-color: #f8f8f8;
             border-radius: 4px;
         }
+        
+        .withdrawn {
+    color: #808080; /* This is the gray color */
+    font-style: italic;
+}
+
+.tiebreak-section {
+    margin: 20px 0;
+}
+
+.tiebreak-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.tiebreak-btn:hover {
+    background-color: #45a049;
+}
     </style>
 </head>
 <body>
@@ -73,6 +95,21 @@
             <button onclick="addPlayer()">Add Player</button>
         </div>
     </div>
+    <div class="player-entry">
+    <input type="text" id="byePlayerName" placeholder="Player Name">
+    <input type="number" id="byeRound" placeholder="Round #" min="1">
+    <button onclick="giveHalfBye()">Give 1/2 Point Bye</button>
+</div>
+    <!-- Add this after the player-entry div -->
+<div class="player-entry">
+    <input type="text" id="withdrawName" placeholder="Player Name">
+    <button onclick="withdrawPlayer()">Withdraw Player</button>
+</div>
+
+<!-- Add this after the player-list div -->
+<div class="tiebreak-section">
+    <button onclick="calculateTiebreaks()" class="tiebreak-btn">Show Standings with Tiebreaks</button>
+</div>
 
     <div class="round-info">
         <h3>Current Round: <span id="currentRound">0</span></h3>
@@ -107,13 +144,14 @@
                 }
 
                 players.push({
-                    name: name,
-                    rating: rating,
-                    score: 0,
-                    opponents: [],
-                    colorHistory: [], // positive for white, negative for black
-                    colorBalance: 0,
-                });
+    name: name,
+    rating: rating,
+    score: 0,
+    opponents: [],
+    colorHistory: [],
+    colorBalance: 0,
+    halfByes: [], // Add this new property to track rounds with half-point byes
+});
                 
                 document.getElementById('playerName').value = '';
                 document.getElementById('playerRating').value = '';
@@ -121,10 +159,44 @@
                 displayPlayers();
             }
         }
+        
+        function giveHalfBye() {
+    const name = document.getElementById('byePlayerName').value.trim();
+    const roundNum = parseInt(document.getElementById('byeRound').value);
+    const player = players.find(p => p.name === name);
+    
+    if (!player) {
+        alert('Player not found!');
+        return;
+    }
+    
+    if (!roundNum || roundNum < 1) {
+        alert('Please enter a valid round number!');
+        return;
+    }
+    
+    // Check if player already has a bye for this round
+    if (player.halfByes.includes(roundNum)) {
+        alert('Player already has a bye for this round!');
+        return;
+    }
+    
+    if (confirm(`Give 1/2 point bye to ${name} for round ${roundNum}?`)) {
+        player.halfByes.push(roundNum);
+        // Add score immediately when the bye is given
+        player.score += 0.5;
+        // Add to opponents list to track the bye
+        player.opponents.push(`Bye R${roundNum}`);
+        // Clear input fields
+        document.getElementById('byePlayerName').value = '';
+        document.getElementById('byeRound').value = '';
+        // Update display
+        displayPlayers();
+    }
+}
 
         function displayPlayers() {
             const list = document.getElementById('playersList');
-            // Sort players by score (descending), then by rating (descending)
             const sortedPlayers = [...players].sort((a, b) => {
                 if (b.score === a.score) {
                     return b.rating - a.rating;
@@ -133,11 +205,11 @@
             });
 
             list.innerHTML = sortedPlayers.map((player, index) => `
-                <div class="player">
-                    ${index + 1}. ${player.name} (${player.rating}) - Score: ${player.score}
-                    ${currentRound === 0 ? `<button onclick="removePlayer('${player.name}')">Remove</button>` : ''}
-                </div>
-            `).join('');
+    <div class="player ${player.withdrawn ? 'withdrawn' : ''}">
+        ${index + 1}. ${player.name} (${player.rating}) - Score: ${player.score}
+        ${currentRound === 0 ? `<button onclick="removePlayer('${player.name}')">Remove</button>` : ''}
+    </div>
+`).join('');
 
             const generateBtn = document.getElementById('generatePairingsBtn');
             generateBtn.textContent = currentRound === 0 ? 'Start Tournament' : 'Generate Next Round';
@@ -174,18 +246,17 @@
             currentRound++;
             document.getElementById('currentRound').textContent = currentRound;
 
-            // Sort players by score, then by rating
-            const sortedPlayers = [...players].sort((a, b) => {
-                if (b.score === a.score) {
-                    return b.rating - a.rating;
-                }
-                return b.score - a.score;
-            });
-
+const sortedPlayers = [...players]
+    .filter(player => !player.withdrawn && !player.halfByes.includes(currentRound))  // Add check for half byes
+    .sort((a, b) => {
+        if (b.score === a.score) {
+            return b.rating - a.rating;
+        }
+        return b.score - a.score;
+    });
             let pairings = [];
             let pairedPlayers = [];
-
-            // Group players by score
+            
             const scoreGroups = {};
             sortedPlayers.forEach(player => {
                 if (!scoreGroups[player.score]) {
@@ -194,16 +265,14 @@
                 scoreGroups[player.score].push(player);
             });
 
-            // Process each score group from highest to lowest score
             Object.entries(scoreGroups)
                 .sort(([scoreA], [scoreB]) => Number(scoreB) - Number(scoreA))
                 .forEach(([score, group]) => {
-                    // Split group into upper and lower halves
+                    
                     const midPoint = Math.ceil(group.length / 2);
                     const upperHalf = group.slice(0, midPoint);
                     const lowerHalf = group.slice(midPoint);
 
-                    // Pair across halves
                     for (let i = 0; i < upperHalf.length; i++) {
                         if (pairedPlayers.includes(upperHalf[i].name)) continue;
 
@@ -212,7 +281,6 @@
                             opponent = findBestOpponentInGroup(upperHalf[i], lowerHalf, pairedPlayers);
                         }
                         
-                        // If no opponent found in lower half, try upper half
                         if (!opponent && upperHalf.length > i + 1) {
                             opponent = findBestOpponentInGroup(upperHalf[i], upperHalf.slice(i + 1), pairedPlayers);
                         }
@@ -230,10 +298,8 @@
                     }
                 });
 
-            // Handle remaining unpaired players
             const unpaired = sortedPlayers.filter(p => !pairedPlayers.includes(p.name));
             
-            // Pair any remaining players
             while (unpaired.length >= 2) {
                 const player1 = unpaired[0];
                 let bestOpponentIndex = 1;
@@ -259,7 +325,6 @@
                 unpaired.splice(0, 1);
             }
 
-            // Handle bye if odd number of players
             if (unpaired.length === 1) {
                 pairings.push({
                     white: unpaired[0],
@@ -269,7 +334,6 @@
                 });
             }
 
-            // Sort pairings by total score of the players (descending)
             pairings.sort((a, b) => b.totalScore - a.totalScore);
 
             currentPairings = pairings;
@@ -279,11 +343,9 @@
         }
 
         function shouldGetWhite(player1, player2) {
-            // If color balance is significantly different, give white to the player who has had more blacks
             if (Math.abs(player1.colorBalance - player2.colorBalance) >= 2) {
                 return player1.colorBalance < player2.colorBalance;
             }
-            // Otherwise, alternate colors from their last game if possible
             if (player1.colorHistory.length > 0 && player2.colorHistory.length > 0) {
                 if (player1.colorHistory[player1.colorHistory.length - 1] < 0) {
                     return true;
@@ -292,7 +354,6 @@
                     return false;
                 }
             }
-            // Default to random if no other criteria apply
             return Math.random() < 0.5;
         }
 
@@ -320,33 +381,91 @@
             }).join('');
         }
 
-		
+		function withdrawPlayer() {
+    const name = document.getElementById('withdrawName').value.trim();
+    const playerIndex = players.findIndex(p => p.name === name);
+    
+    if (playerIndex === -1) {
+        alert('Player not found!');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to withdraw ${name}?`)) {
+        players[playerIndex].withdrawn = true;
+        players[playerIndex].name = players[playerIndex].name + " (Withdrawn)";
+        document.getElementById('withdrawName').value = '';
+        displayPlayers();
+    }
+}
+
+function calculateTiebreaks() {
+    // Calculate tiebreaks for each player
+    players.forEach(player => {
+        let opponentScores = player.opponents.map(oppName => {
+            const opponent = players.find(p => p.name === oppName);
+            return opponent ? opponent.score : 0.5; // Count 0.5 for unplayed games by opponents
+        });
+        
+        // Sort scores to remove highest and lowest
+        opponentScores.sort((a, b) => b - a);
+        
+        // Determine how many scores to trim from each end
+        const trimCount = currentRound >= 9 ? 2 : 1;
+        
+        // Remove the highest and lowest scores (or top/bottom 2 for 9+ rounds)
+        if (opponentScores.length > (trimCount * 2)) {
+            opponentScores = opponentScores.slice(trimCount, -trimCount);
+        }
+        
+        // Sum the remaining scores
+        player.buchholz = opponentScores.reduce((sum, score) => sum + score, 0);
+    });
+
+    // Sort players by primary (score) and secondary (buchholz) criteria
+    const sortedPlayers = [...players].sort((a, b) => {
+        if (b.score === a.score) {
+            return b.buchholz - a.buchholz;
+        }
+        return b.score - a.score;
+    });
+
+    // Display the sorted standings with tiebreaks
+    displayStandingsWithTiebreaks(sortedPlayers);
+}
+
+function displayStandingsWithTiebreaks(sortedPlayers) {
+    const list = document.getElementById('playersList');
+    list.innerHTML = sortedPlayers.map((player, index) => `
+        <div class="player ${player.withdrawn ? 'withdrawn' : ''}">
+            ${index + 1}. ${player.name} (${player.rating}) 
+            - Score: ${player.score} 
+            - Buchholz: ${player.buchholz.toFixed(1)}
+            ${currentRound === 0 ? `<button onclick="removePlayer('${player.name}')">Remove</button>` : ''}
+        </div>
+    `).join('');
+}
         
         function recordResult(pairingIndex, result) {
             const pairing = currentPairings[pairingIndex];
             
             if (!pairing.completed) {
                 if (result === 'bye') {
-                    // Handle bye
                     const player = players.find(p => p.name === pairing.white.name);
                     player.score += 1;
-                    player.colorHistory.push(1); // Count bye as white
+                    player.colorHistory.push(1);
                     player.colorBalance += 1;
                 } else {
                     const white = players.find(p => p.name === pairing.white.name);
                     const black = players.find(p => p.name === pairing.black.name);
 
-                    // Record opponents
                     white.opponents.push(black.name);
                     black.opponents.push(white.name);
 
-                    // Record colors
                     white.colorHistory.push(1);
                     black.colorHistory.push(-1);
                     white.colorBalance += 1;
                     black.colorBalance -= 1;
 
-                    // Update scores
                     switch (result) {
                         case 'white':
                             white.score += 1;
@@ -362,8 +481,6 @@
                 }
 
                 pairing.completed = true;
-
-                // Check if all results are entered
                 allResultsEntered = currentPairings.every(p => p.completed);
                 document.getElementById('generatePairingsBtn').disabled = !allResultsEntered;
 
