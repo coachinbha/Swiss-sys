@@ -94,6 +94,15 @@
             <input type="number" id="playerRating" placeholder="Rating">
             <button onclick="addPlayer()">Add Player</button>
         </div>
+        <div class="csv-import">
+    <h3>Import Players from CSV</h3>
+    <p>CSV format: Name,Rating (one player per line)</p>
+    <input type="file" 
+           id="csvInput" 
+           accept=".csv"
+           class="file-input">
+    <button onclick="importPlayersFromCSV()">Import Players</button>
+</div>
     </div>
     <div class="player-entry">
     <input type="text" id="byePlayerName" placeholder="Player Name">
@@ -160,6 +169,62 @@
             }
         }
         
+        function importPlayersFromCSV() {
+    const fileInput = document.getElementById('csvInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a CSV file first.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        
+        let successful = 0;
+        let errors = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            if (!lines[i].trim()) continue; // Skip empty lines
+            
+            const [name, rating] = lines[i].split(',').map(item => item.trim());
+            const ratingNum = parseInt(rating);
+            
+            if (!name || isNaN(ratingNum)) {
+                errors.push(`Line ${i + 1}: Invalid format`);
+                continue;
+            }
+            
+            if (players.some(p => p.name === name)) {
+                errors.push(`Line ${i + 1}: Player "${name}" already exists`);
+                continue;
+            }
+            
+            players.push({
+                name: name,
+                rating: ratingNum,
+                score: 0,
+                opponents: [],
+                colorHistory: [],
+                colorBalance: 0,
+                halfByes: []
+            });
+            successful++;
+        }
+        
+        if (successful > 0) {
+            displayPlayers();
+            alert(`Successfully imported ${successful} players.${errors.length > 0 ? '\n\nErrors:\n' + errors.join('\n') : ''}`);
+            fileInput.value = ''; // Clear the file input
+        } else {
+            alert('No valid players were found in the CSV file.\n\nErrors:\n' + errors.join('\n'));
+        }
+    };
+    
+    reader.readAsText(file);
+}
         function giveHalfBye() {
     const name = document.getElementById('byePlayerName').value.trim();
     const roundNum = parseInt(document.getElementById('byeRound').value);
