@@ -159,7 +159,8 @@
     opponents: [],
     colorHistory: [],
     colorBalance: 0,
-    halfByes: [], // Add this new property to track rounds with half-point byes
+    halfByes: [],
+    hadFullBye: false    // Make sure there's NO comma after the last property
 });
                 
                 document.getElementById('playerName').value = '';
@@ -334,7 +335,9 @@ const sortedPlayers = [...players]
                 .sort(([scoreA], [scoreB]) => Number(scoreB) - Number(scoreA))
                 .forEach(([score, group]) => {
                     
-                    const midPoint = Math.ceil(group.length / 2);
+                    const midPoint = group.length % 2 === 0 ? 
+    Math.ceil(group.length / 2) : 
+    Math.floor(group.length / 2);
                     const upperHalf = group.slice(0, midPoint);
                     const lowerHalf = group.slice(midPoint);
 
@@ -391,13 +394,29 @@ const sortedPlayers = [...players]
             }
 
             if (unpaired.length === 1) {
-                pairings.push({
-                    white: unpaired[0],
-                    black: null,
-                    completed: false,
-                    totalScore: unpaired[0].score
-                });
-            }
+    const unpairedPlayer = unpaired[0];
+    if (!unpairedPlayer.hadFullBye) {
+        pairings.push({
+            white: unpairedPlayer,
+            black: null,
+            completed: false,
+            totalScore: unpairedPlayer.score
+        });
+        unpairedPlayer.hadFullBye = true;
+        unpairedPlayer.score += 1;  // Give full point
+        unpairedPlayer.opponents.push('Full Bye');
+    } else {
+        // If player already had a full bye, they get a half point instead
+        unpairedPlayer.score += 0.5;
+        unpairedPlayer.opponents.push('Half Bye');
+        pairings.push({
+            white: unpairedPlayer,
+            black: null,
+            completed: false,
+            totalScore: unpairedPlayer.score
+        });
+    }
+}
 
             pairings.sort((a, b) => b.totalScore - a.totalScore);
 
