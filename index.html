@@ -1,576 +1,1188 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Swiss System Chess Tournament Pairings</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swiss System Chess Tournament</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 20px;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.4;
         }
-        .player-entry {
-            margin-bottom: 10px;
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        .player-list {
-            margin: 20px 0;
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border: 2px solid #333;
         }
-        .pairings {
-            margin-top: 20px;
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-        .pairing {
-            padding: 10px;
+
+        .tournament-info {
+            font-size: 14px;
             margin: 5px 0;
-            background-color: #f0f0f0;
-            border-radius: 4px;
         }
-        .pairing.completed {
-            background-color: #e0f0e0;
-        }
-        button {
-            padding: 8px 12px;
-            margin: 5px;
-            cursor: pointer;
+
+        .section {
+            margin-bottom: 30px;
+            background: white;
             border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #fff;
         }
-        button:hover {
-            background-color: #f0f0f0;
+
+        .section-header {
+            background: #e6e6e6;
+            border-bottom: 2px solid #333;
+            padding: 10px 15px;
+            font-weight: bold;
+            font-size: 16px;
         }
-        button:disabled {
-            background-color: #eee;
-            cursor: not-allowed;
+
+        .section-content {
+            padding: 15px;
         }
-        input[type="number"] {
-            width: 80px;
-            padding: 6px;
-            margin: 2px;
+
+        /* Input controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
-        input[type="text"] {
-            width: 200px;
-            padding: 6px;
-            margin: 2px;
+
+        .controls input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            min-width: 200px;
         }
-        .standings {
-            margin-top: 20px;
+
+        .controls button {
+            padding: 8px 16px;
+            border: 1px solid #333;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
         }
-        .round-info {
-            margin: 20px 0;
+
+        .controls button:hover {
+            background: #f0f0f0;
+        }
+
+        .btn-primary { background: #4CAF50 !important; color: white; }
+        .btn-danger { background: #f44336 !important; color: white; }
+        .btn-warning { background: #ff9800 !important; color: white; }
+
+        /* Tables */
+        .swiss-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: white;
+        }
+
+        .swiss-table th,
+        .swiss-table td {
+            border: 1px solid #333;
+            padding: 6px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .swiss-table th {
+            background: #d6d6d6;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .swiss-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .swiss-table tr:nth-child(odd) {
+            background: white;
+        }
+
+        /* Player registration table */
+        .players-table {
+            width: 100%;
+        }
+
+        .players-table th {
+            background: #e6e6e6;
+        }
+
+        .players-table .name-col { width: 25%; text-align: left; }
+        .players-table .score-col { width: 8%; }
+        .players-table .games-col { width: 8%; }
+        .players-table .status-col { width: 12%; }
+        .players-table .action-col { width: 15%; }
+
+        /* Pairings table */
+        .pairings-table {
+            width: 100%;
+            page-break-inside: avoid;
+        }
+
+        .pairings-table .board-col { width: 8%; }
+        .pairings-table .player-col { width: 20%; text-align: left; }
+        .pairings-table .rating-col { width: 8%; }
+        .pairings-table .score-col { width: 8%; }
+        .pairings-table .result-col { width: 12%; }
+
+        /* Standings table */
+        .standings-table {
+            width: 100%;
+        }
+
+        .standings-table .rank-col { width: 6%; }
+        .standings-table .name-col { width: 25%; text-align: left; }
+        .standings-table .score-col { width: 8%; }
+        .standings-table .games-col { width: 8%; }
+        .standings-table .perf-col { width: 10%; }
+
+        /* Round header */
+        .round-header {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
             padding: 10px;
-            background-color: #f8f8f8;
-            border-radius: 4px;
+            background: #333;
+            color: white;
         }
-        
-        .withdrawn {
-    color: #808080; /* This is the gray color */
-    font-style: italic;
-}
 
-.tiebreak-section {
-    margin: 20px 0;
-}
+        /* Status indicators */
+        .status-active { color: #4CAF50; font-weight: bold; }
+        .status-withdrawn { color: #f44336; font-weight: bold; }
 
-.tiebreak-btn {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
+        /* Result buttons */
+        .result-buttons {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
 
-.tiebreak-btn:hover {
-    background-color: #45a049;
-}
+        .result-buttons button {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: 1px solid #333;
+            background: white;
+            cursor: pointer;
+        }
+
+        .result-buttons .btn-win { background: #4CAF50; color: white; }
+        .result-buttons .btn-draw { background: #2196F3; color: white; }
+        .result-buttons .btn-loss { background: #f44336; color: white; }
+        .result-buttons .btn-forfeit { background: #ff9800; color: white; }
+
+        /* Print styles */
+        @media print {
+            body { background: white; }
+            .container { max-width: none; padding: 10px; }
+            .controls { display: none; }
+            .section { page-break-inside: avoid; margin-bottom: 20px; }
+            .pairings-table { font-size: 11px; }
+            .result-buttons { display: none; }
+            .action-col { display: none; }
+        }
+
+        @media screen and (max-width: 768px) {
+            .swiss-table { font-size: 11px; }
+            .swiss-table th, .swiss-table td { padding: 4px; }
+            .controls { flex-direction: column; }
+            .controls input, .controls button { width: 100%; }
+        }
+
+        .bye-row {
+            background: #fff3cd !important;
+            font-weight: bold;
+        }
+
+        .completed-game {
+            background: #e8f5e8;
+        }
+
+        .player-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tournament-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>Swiss System Chess Tournament Pairings</h1>
-    
-    <div class="input-section">
-        <div class="player-entry">
-            <input type="text" id="playerName" placeholder="Player Name">
-            <input type="number" id="playerRating" placeholder="Rating">
-            <button onclick="addPlayer()">Add Player</button>
+    <div class="container">
+        <!-- Tournament Header -->
+        <div class="header">
+            <h1>SWISS SYSTEM CHESS TOURNAMENT</h1>
+            <div class="tournament-info">
+                <div><strong>Tournament:</strong> <input type="text" id="tournamentNameInput" value="Local Club Championship" style="border: none; background: transparent; font-size: 14px; min-width: 250px;"></div>
+                <div><strong>Date:</strong> <span id="tournamentDate"></span></div>
+                <div><strong>Arbiter:</strong> <input type="text" id="arbiterNameInput" placeholder="Enter arbiter name" style="border: none; background: transparent; font-size: 14px; min-width: 200px;"></div>
+                <div><strong>Time Control:</strong> <input type="text" id="timeControlInput" value="G/90+30" style="border: none; background: transparent; font-size: 14px; min-width: 150px;"></div>
+            </div>
         </div>
-        <div class="csv-import">
-    <h3>Import Players from CSV</h3>
-    <p>CSV format: Name,Rating (one player per line)</p>
-    <input type="file" 
-           id="csvInput" 
-           accept=".csv"
-           class="file-input">
-    <button onclick="importPlayersFromCSV()">Import Players</button>
-</div>
-    </div>
-    <div class="player-entry">
-    <input type="text" id="byePlayerName" placeholder="Player Name">
-    <input type="number" id="byeRound" placeholder="Round #" min="1">
-    <button onclick="giveHalfBye()">Give 1/2 Point Bye</button>
-</div>
-    <!-- Add this after the player-entry div -->
-<div class="player-entry">
-    <input type="text" id="withdrawName" placeholder="Player Name">
-    <button onclick="withdrawPlayer()">Withdraw Player</button>
-</div>
 
-<!-- Add this after the player-list div -->
-<div class="tiebreak-section">
-    <button onclick="calculateTiebreaks()" class="tiebreak-btn">Show Standings with Tiebreaks</button>
-</div>
+        <!-- Tournament Statistics -->
+        <div class="tournament-stats">
+            <div class="stat-box">
+                <div class="stat-number" id="totalPlayers">0</div>
+                <div class="stat-label">Total Players</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="activePlayers">0</div>
+                <div class="stat-label">Active Players</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="currentRoundNum">0</div>
+                <div class="stat-label">Current Round</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="completedGames">0</div>
+                <div class="stat-label">Completed Games</div>
+            </div>
+        </div>
 
-    <div class="round-info">
-        <h3>Current Round: <span id="currentRound">0</span></h3>
-    </div>
+        <!-- Player Registration Section -->
+        <div class="section">
+            <div class="section-header">PLAYER REGISTRATION</div>
+            <div class="section-content">
+                <div class="controls">
+                    <input type="text" id="playerName" placeholder="Player Name" maxlength="30">
+                    <button class="btn-primary" onclick="addPlayer()">Add Player</button>
+                    <button class="btn-warning" onclick="clearAllPlayers()">Clear All</button>
+                </div>
+                
+                <table class="swiss-table players-table">
+                    <thead>
+                        <tr>
+                            <th class="name-col">PLAYER NAME</th>
+                            <th class="score-col">SCORE</th>
+                            <th class="games-col">W</th>
+                            <th class="games-col">D</th>
+                            <th class="games-col">L</th>
+                            <th class="games-col">BYES</th>
+                            <th class="status-col">STATUS</th>
+                            <th class="action-col">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playersTableBody">
+                        <tr><td colspan="8" style="text-align: center; font-style: italic; color: #666;">No players registered</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <div class="player-list">
-        <h2>Players and Standings:</h2>
-        <div id="playersList"></div>
-    </div>
+        <!-- Tournament Control -->
+        <div class="section">
+            <div class="section-header">TOURNAMENT CONTROL</div>
+            <div class="section-content">
+                <div class="controls">
+                    <button class="btn-primary" onclick="generatePairings()">Generate Next Round</button>
+                    <button onclick="printPairings()" style="margin-left: 20px;">🖨️ Print Pairings</button>
+                    <button onclick="printStandings()">🖨️ Print Standings</button>
+                    <button onclick="generateCrosstable()">📊 Crosstable</button>
+                </div>
+                <div class="controls" style="margin-top: 10px;">
+                    <button onclick="exportTournamentData()">💾 Export Data</button>
+                    <label for="importFile" style="cursor: pointer; padding: 8px 16px; border: 1px solid #333; background: white; font-size: 14px; font-weight: bold;">📁 Import Data</label>
+                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTournamentData(event)">
+                    <button class="btn-danger" onclick="resetTournament()" style="margin-left: 20px;">Reset Tournament</button>
+                </div>
+            </div>
+        </div>
 
-    <button onclick="generatePairings()" id="generatePairingsBtn">Start Tournament</button>
+        <!-- Current Round Pairings -->
+        <div class="section" id="pairingsSection" style="display: none;">
+            <div class="round-header" id="roundHeader">ROUND 1 PAIRINGS</div>
+            <div class="section-content">
+                <table class="swiss-table pairings-table" id="pairingsTable">
+                    <thead>
+                        <tr>
+                            <th class="board-col">BOARD</th>
+                            <th class="player-col">WHITE PLAYER</th>
+                            <th class="score-col">SCORE</th>
+                            <th class="player-col">BLACK PLAYER</th>
+                            <th class="score-col">SCORE</th>
+                            <th class="result-col">RESULT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pairingsTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <div class="pairings">
-        <h2>Current Round Pairings:</h2>
-        <div id="pairingsList"></div>
+        <!-- Tournament Standings -->
+        <div class="section">
+            <div class="section-header">CURRENT STANDINGS</div>
+            <div class="section-content">
+                <table class="swiss-table standings-table">
+                    <thead>
+                        <tr>
+                            <th class="rank-col">RANK</th>
+                            <th class="name-col">PLAYER NAME</th>
+                            <th class="score-col">SCORE</th>
+                            <th class="games-col">WINS</th>
+                            <th class="games-col">DRAWS</th>
+                            <th class="games-col">LOSSES</th>
+                            <th class="games-col">BYES</th>
+                            <th class="perf-col">STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standingsTableBody">
+                        <tr><td colspan="8" style="text-align: center; font-style: italic; color: #666;">No players to display</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
         let players = [];
         let currentRound = 0;
-        let currentPairings = [];
-        let allResultsEntered = true;
+        let pairings = [];
+        let tournamentHistory = [];
+
+        // Initialize tournament date
+        document.getElementById('tournamentDate').textContent = new Date().toLocaleDateString();
 
         function addPlayer() {
-            const name = document.getElementById('playerName').value.trim();
-            const rating = parseInt(document.getElementById('playerRating').value);
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
             
-            if (name && rating) {
-                if (players.some(p => p.name === name)) {
-                    alert('A player with this name already exists!');
-                    return;
-                }
-
-                players.push({
-    name: name,
-    rating: rating,
-    score: 0,
-    opponents: [],
-    colorHistory: [],
-    colorBalance: 0,
-    halfByes: [],
-    hadFullBye: false    // Make sure there's NO comma after the last property
-});
+            if (name && !players.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+                const player = {
+                    id: Date.now() + Math.random(),
+                    name: name,
+                    score: 0,
+                    wins: 0,
+                    losses: 0,
+                    draws: 0,
+                    byes: 0,
+                    opponents: [],
+                    colors: [], // 0 = white, 1 = black
+                    status: 'active',
+                    rating: 'unrated'
+                };
                 
-                document.getElementById('playerName').value = '';
-                document.getElementById('playerRating').value = '';
-                
-                displayPlayers();
+                players.push(player);
+                nameInput.value = '';
+                updateAllDisplays();
+            } else if (name) {
+                alert('Player already exists or name is invalid!');
             }
         }
-        
-        function importPlayersFromCSV() {
-    const fileInput = document.getElementById('csvInput');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        alert('Please select a CSV file first.');
-        return;
-    }
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const text = e.target.result;
-        const lines = text.split('\n');
-        
-        let successful = 0;
-        let errors = [];
-        
-        for (let i = 0; i < lines.length; i++) {
-            if (!lines[i].trim()) continue; // Skip empty lines
-            
-            const [name, rating] = lines[i].split(',').map(item => item.trim());
-            const ratingNum = parseInt(rating);
-            
-            if (!name || isNaN(ratingNum)) {
-                errors.push(`Line ${i + 1}: Invalid format`);
-                continue;
+        function withdrawPlayer(playerId) {
+            const player = players.find(p => p.id === playerId);
+            if (player && confirm(`Withdraw ${player.name} from tournament?`)) {
+                player.status = 'withdrawn';
+                updateAllDisplays();
+            }
+        }
+
+        function reinstatePlayer(playerId) {
+            const player = players.find(p => p.id === playerId);
+            if (player) {
+                player.status = 'active';
+                updateAllDisplays();
+            }
+        }
+
+        function removePlayer(playerId) {
+            if (currentRound > 0) {
+                alert('Cannot remove players after tournament has started!');
+                return;
             }
             
-            if (players.some(p => p.name === name)) {
-                errors.push(`Line ${i + 1}: Player "${name}" already exists`);
-                continue;
+            if (confirm('Remove player permanently?')) {
+                players = players.filter(p => p.id !== playerId);
+                updateAllDisplays();
+            }
+        }
+
+        function clearAllPlayers() {
+            if (currentRound > 0) {
+                alert('Cannot clear players after tournament has started!');
+                return;
             }
             
-            players.push({
-                name: name,
-                rating: ratingNum,
-                score: 0,
-                opponents: [],
-                colorHistory: [],
-                colorBalance: 0,
-                halfByes: []
-            });
-            successful++;
-        }
-        
-        if (successful > 0) {
-            displayPlayers();
-            alert(`Successfully imported ${successful} players.${errors.length > 0 ? '\n\nErrors:\n' + errors.join('\n') : ''}`);
-            fileInput.value = ''; // Clear the file input
-        } else {
-            alert('No valid players were found in the CSV file.\n\nErrors:\n' + errors.join('\n'));
-        }
-    };
-    
-    reader.readAsText(file);
-}
-        function giveHalfBye() {
-    const name = document.getElementById('byePlayerName').value.trim();
-    const roundNum = parseInt(document.getElementById('byeRound').value);
-    const player = players.find(p => p.name === name);
-    
-    if (!player) {
-        alert('Player not found!');
-        return;
-    }
-    
-    if (!roundNum || roundNum < 1) {
-        alert('Please enter a valid round number!');
-        return;
-    }
-    
-    // Check if player already has a bye for this round
-    if (player.halfByes.includes(roundNum)) {
-        alert('Player already has a bye for this round!');
-        return;
-    }
-    
-    if (confirm(`Give 1/2 point bye to ${name} for round ${roundNum}?`)) {
-        player.halfByes.push(roundNum);
-        // Add score immediately when the bye is given
-        player.score += 0.5;
-        // Add to opponents list to track the bye
-        player.opponents.push(`Bye R${roundNum}`);
-        // Clear input fields
-        document.getElementById('byePlayerName').value = '';
-        document.getElementById('byeRound').value = '';
-        // Update display
-        displayPlayers();
-    }
-}
-
-        function displayPlayers() {
-            const list = document.getElementById('playersList');
-            const sortedPlayers = [...players].sort((a, b) => {
-                if (b.score === a.score) {
-                    return b.rating - a.rating;
-                }
-                return b.score - a.score;
-            });
-
-            list.innerHTML = sortedPlayers.map((player, index) => `
-    <div class="player ${player.withdrawn ? 'withdrawn' : ''}">
-        ${index + 1}. ${player.name} (${player.rating}) - Score: ${player.score}
-        ${currentRound === 0 ? `<button onclick="removePlayer('${player.name}')">Remove</button>` : ''}
-    </div>
-`).join('');
-
-            const generateBtn = document.getElementById('generatePairingsBtn');
-            generateBtn.textContent = currentRound === 0 ? 'Start Tournament' : 'Generate Next Round';
-            generateBtn.disabled = !allResultsEntered;
-        }
-
-        function removePlayer(playerName) {
-            if (currentRound > 0) return;
-            players = players.filter(p => p.name !== playerName);
-            displayPlayers();
-        }
-
-        function findBestOpponentInGroup(player, group, pairedPlayers) {
-            for (let potential of group) {
-                if (!pairedPlayers.includes(potential.name) && 
-                    !player.opponents.includes(potential.name)) {
-                    return potential;
-                }
+            if (confirm('Remove all players?')) {
+                players = [];
+                updateAllDisplays();
             }
-            return null;
+        }
+
+        function updatePlayersTable() {
+            const tbody = document.getElementById('playersTableBody');
+            
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; font-style: italic; color: #666;">No players registered</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = players.map((player, index) => `
+                <tr>
+                    <td style="text-align: left; padding-left: 10px;">${player.name}</td>
+                    <td><strong>${player.score}</strong></td>
+                    <td>${player.wins}</td>
+                    <td>${player.draws}</td>
+                    <td>${player.losses}</td>
+                    <td>${player.byes}</td>
+                    <td><span class="status-${player.status}">${player.status.toUpperCase()}</span></td>
+                    <td class="action-col">
+                        ${player.status === 'active' ? 
+                            `<button onclick="withdrawPlayer(${player.id})" style="font-size: 11px; padding: 2px 6px;">Withdraw</button>` :
+                            `<button onclick="reinstatePlayer(${player.id})" style="font-size: 11px; padding: 2px 6px;">Reinstate</button>`
+                        }
+                        <button onclick="removePlayer(${player.id})" style="font-size: 11px; padding: 2px 6px; margin-left: 4px;">Remove</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         function generatePairings() {
-            if (players.length < 2) {
-                alert('Need at least 2 players to generate pairings!');
+            const activePlayers = players.filter(p => p.status === 'active');
+            
+            if (activePlayers.length < 2) {
+                alert('Need at least 2 active players!');
                 return;
             }
-
-            if (!allResultsEntered && currentRound > 0) {
-                alert('Please enter all results for the current round first!');
-                return;
-            }
-
+            
             currentRound++;
-            document.getElementById('currentRound').textContent = currentRound;
-
-const sortedPlayers = [...players]
-    .filter(player => !player.withdrawn && !player.halfByes.includes(currentRound))  // Add check for half byes
-    .sort((a, b) => {
-        if (b.score === a.score) {
-            return b.rating - a.rating;
-        }
-        return b.score - a.score;
-    });
-            let pairings = [];
-            let pairedPlayers = [];
             
-            const scoreGroups = {};
-            sortedPlayers.forEach(player => {
-                if (!scoreGroups[player.score]) {
-                    scoreGroups[player.score] = [];
-                }
-                scoreGroups[player.score].push(player);
+            // Sort players by score (descending), then by wins
+            const sortedPlayers = [...activePlayers].sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return 0;
             });
-
-            Object.entries(scoreGroups)
-                .sort(([scoreA], [scoreB]) => Number(scoreB) - Number(scoreA))
-                .forEach(([score, group]) => {
-                    
-                    const midPoint = group.length % 2 === 0 ? 
-    Math.ceil(group.length / 2) : 
-    Math.floor(group.length / 2);
-                    const upperHalf = group.slice(0, midPoint);
-                    const lowerHalf = group.slice(midPoint);
-
-                    for (let i = 0; i < upperHalf.length; i++) {
-                        if (pairedPlayers.includes(upperHalf[i].name)) continue;
-
-                        let opponent = null;
-                        if (lowerHalf.length > i) {
-                            opponent = findBestOpponentInGroup(upperHalf[i], lowerHalf, pairedPlayers);
-                        }
-                        
-                        if (!opponent && upperHalf.length > i + 1) {
-                            opponent = findBestOpponentInGroup(upperHalf[i], upperHalf.slice(i + 1), pairedPlayers);
-                        }
-
-                        if (opponent) {
-                            const player1GetsWhite = shouldGetWhite(upperHalf[i], opponent);
-                            pairings.push({
-                                white: player1GetsWhite ? upperHalf[i] : opponent,
-                                black: player1GetsWhite ? opponent : upperHalf[i],
-                                completed: false,
-                                totalScore: upperHalf[i].score + opponent.score
-                            });
-                            pairedPlayers.push(upperHalf[i].name, opponent.name);
-                        }
-                    }
-                });
-
-            const unpaired = sortedPlayers.filter(p => !pairedPlayers.includes(p.name));
             
-            while (unpaired.length >= 2) {
-                const player1 = unpaired[0];
-                let bestOpponentIndex = 1;
+            const paired = new Set();
+            const roundPairings = [];
+            let boardNumber = 1;
+            
+            // Swiss pairing algorithm
+            for (let i = 0; i < sortedPlayers.length; i++) {
+                if (paired.has(sortedPlayers[i].id)) continue;
                 
-                for (let i = 1; i < unpaired.length; i++) {
-                    if (!player1.opponents.includes(unpaired[i].name)) {
-                        bestOpponentIndex = i;
-                        break;
+                const player1 = sortedPlayers[i];
+                let player2 = null;
+                
+                // Find best opponent, avoiding repeats
+                for (let j = i + 1; j < sortedPlayers.length; j++) {
+                    const candidate = sortedPlayers[j];
+                    if (paired.has(candidate.id)) continue;
+                    if (player1.opponents.includes(candidate.id)) continue;
+                    
+                    player2 = candidate;
+                    break;
+                }
+                
+                if (player2) {
+                    // Color assignment logic
+                    const p1WhiteBalance = player1.colors.filter(c => c === 0).length - player1.colors.filter(c => c === 1).length;
+                    const p2WhiteBalance = player2.colors.filter(c => c === 0).length - player2.colors.filter(c => c === 1).length;
+                    
+                    let whitePlayer, blackPlayer;
+                    
+                    if (p1WhiteBalance < p2WhiteBalance) {
+                        whitePlayer = player1;
+                        blackPlayer = player2;
+                    } else if (p2WhiteBalance < p1WhiteBalance) {
+                        whitePlayer = player2;
+                        blackPlayer = player1;
+                    } else {
+                        // Random if balanced
+                        if (Math.random() < 0.5) {
+                            whitePlayer = player1;
+                            blackPlayer = player2;
+                        } else {
+                            whitePlayer = player2;
+                            blackPlayer = player1;
+                        }
                     }
+                    
+                    roundPairings.push({
+                        id: Date.now() + Math.random(),
+                        board: boardNumber++,
+                        white: whitePlayer,
+                        black: blackPlayer,
+                        result: null,
+                        round: currentRound
+                    });
+                    
+                    paired.add(player1.id);
+                    paired.add(player2.id);
                 }
-
-                const player2 = unpaired[bestOpponentIndex];
-                const player1GetsWhite = shouldGetWhite(player1, player2);
-
-                pairings.push({
-                    white: player1GetsWhite ? player1 : player2,
-                    black: player1GetsWhite ? player2 : player1,
-                    completed: false,
-                    totalScore: player1.score + player2.score
+            }
+            
+            // Handle bye
+            const unpairedPlayers = sortedPlayers.filter(p => !paired.has(p.id));
+            if (unpairedPlayers.length === 1) {
+                const byePlayer = unpairedPlayers[0];
+                byePlayer.score += 1;
+                byePlayer.byes++;
+                
+                roundPairings.push({
+                    id: Date.now() + Math.random(),
+                    board: 'BYE',
+                    bye: byePlayer,
+                    result: 'bye',
+                    round: currentRound
                 });
-
-                unpaired.splice(bestOpponentIndex, 1);
-                unpaired.splice(0, 1);
             }
-
-            if (unpaired.length === 1) {
-    const unpairedPlayer = unpaired[0];
-    if (!unpairedPlayer.hadFullBye) {
-        pairings.push({
-            white: unpairedPlayer,
-            black: null,
-            completed: false,
-            totalScore: unpairedPlayer.score
-        });
-        unpairedPlayer.hadFullBye = true;
-        unpairedPlayer.score += 1;  // Give full point
-        unpairedPlayer.opponents.push('Full Bye');
-    } else {
-        // If player already had a full bye, they get a half point instead
-        unpairedPlayer.score += 0.5;
-        unpairedPlayer.opponents.push('Half Bye');
-        pairings.push({
-            white: unpairedPlayer,
-            black: null,
-            completed: false,
-            totalScore: unpairedPlayer.score
-        });
-    }
-}
-
-            pairings.sort((a, b) => b.totalScore - a.totalScore);
-
-            currentPairings = pairings;
-            allResultsEntered = false;
-            displayPairings();
-            document.getElementById('generatePairingsBtn').disabled = true;
+            
+            pairings = roundPairings;
+            tournamentHistory.push([...roundPairings]);
+            
+            updateAllDisplays();
+            document.getElementById('pairingsSection').style.display = 'block';
         }
 
-        function shouldGetWhite(player1, player2) {
-            if (Math.abs(player1.colorBalance - player2.colorBalance) >= 2) {
-                return player1.colorBalance < player2.colorBalance;
+        function updatePairingsTable() {
+            const tbody = document.getElementById('pairingsTableBody');
+            const header = document.getElementById('roundHeader');
+            
+            if (currentRound === 0 || pairings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; font-style: italic; color: #666;">No pairings generated</td></tr>';
+                return;
             }
-            if (player1.colorHistory.length > 0 && player2.colorHistory.length > 0) {
-                if (player1.colorHistory[player1.colorHistory.length - 1] < 0) {
-                    return true;
-                }
-                if (player2.colorHistory[player2.colorHistory.length - 1] < 0) {
-                    return false;
-                }
-            }
-            return Math.random() < 0.5;
-        }
-
-        function displayPairings() {
-            const list = document.getElementById('pairingsList');
-            list.innerHTML = currentPairings.map((pairing, index) => {
-                if (pairing.black === null) {
+            
+            header.textContent = `ROUND ${currentRound} PAIRINGS`;
+            
+            tbody.innerHTML = pairings.map(pairing => {
+                if (pairing.bye) {
                     return `
-                        <div class="pairing ${pairing.completed ? 'completed' : ''}">
-                            Board ${index + 1}: ${pairing.white.name} (${pairing.white.rating}) {${pairing.white.score}} - BYE
-                            ${!pairing.completed ? `<button onclick="recordResult(${index}, 'bye')">Record Bye</button>` : ''}
-                        </div>
+                        <tr class="bye-row">
+                            <td><strong>BYE</strong></td>
+                            <td style="text-align: left; padding-left: 10px;">${pairing.bye.name}</td>
+                            <td>${pairing.bye.score - 1}</td>
+                            <td>--- BYE ---</td>
+                            <td>---</td>
+                            <td><strong>1-0</strong></td>
+                        </tr>
                     `;
                 }
+                
+                const resultDisplay = pairing.result ? formatResultForTable(pairing.result) : '';
+                const rowClass = pairing.result ? 'completed-game' : '';
+                
                 return `
-                    <div class="pairing ${pairing.completed ? 'completed' : ''}">
-                        Board ${index + 1}: ${pairing.white.name} (${pairing.white.rating}) {${pairing.white.score}} vs ${pairing.black.name} (${pairing.black.rating}) {${pairing.black.score}}
-                        ${!pairing.completed ? `
-                            <button onclick="recordResult(${index}, 'white')">1-0</button>
-                            <button onclick="recordResult(${index}, 'draw')">½-½</button>
-                            <button onclick="recordResult(${index}, 'black')">0-1</button>
-                        ` : ''}
-                    </div>
+                    <tr class="${rowClass}">
+                        <td><strong>${pairing.board}</strong></td>
+                        <td style="text-align: left; padding-left: 10px;">${pairing.white.name}</td>
+                        <td>${pairing.white.score - getGamePoints(pairing, pairing.white.id)}</td>
+                        <td style="text-align: left; padding-left: 10px;">${pairing.black.name}</td>
+                        <td>${pairing.black.score - getGamePoints(pairing, pairing.black.id)}</td>
+                        <td>
+                            ${!pairing.result ? `
+                                <div class="result-buttons">
+                                    <button class="btn-win" onclick="recordResult(${pairing.id}, 'white-win')">1-0</button>
+                                    <button class="btn-draw" onclick="recordResult(${pairing.id}, 'draw')">½-½</button>
+                                    <button class="btn-win" onclick="recordResult(${pairing.id}, 'black-win')">0-1</button>
+                                    <button class="btn-forfeit" onclick="recordResult(${pairing.id}, 'white-forfeit')">W-F</button>
+                                    <button class="btn-forfeit" onclick="recordResult(${pairing.id}, 'black-forfeit')">B-F</button>
+                                    <button class="btn-forfeit" onclick="recordResult(${pairing.id}, 'double-forfeit')">D-F</button>
+                                </div>
+                            ` : `
+                                <div>
+                                    <strong>${resultDisplay}</strong>
+                                    <br>
+                                    <button onclick="correctResult(${pairing.id})" style="font-size: 10px; padding: 2px 6px; margin-top: 2px; background: #ff9800; color: white; border: none; cursor: pointer;">Correct</button>
+                                </div>
+                            `}
+                        </td>
+                    </tr>
                 `;
             }).join('');
         }
 
-		function withdrawPlayer() {
-    const name = document.getElementById('withdrawName').value.trim();
-    const playerIndex = players.findIndex(p => p.name === name);
-    
-    if (playerIndex === -1) {
-        alert('Player not found!');
-        return;
-    }
-    
-    if (confirm(`Are you sure you want to withdraw ${name}?`)) {
-        players[playerIndex].withdrawn = true;
-        players[playerIndex].name = players[playerIndex].name + " (Withdrawn)";
-        document.getElementById('withdrawName').value = '';
-        displayPlayers();
-    }
-}
-
-function calculateTiebreaks() {
-    // Calculate tiebreaks for each player
-    players.forEach(player => {
-        let opponentScores = player.opponents.map(oppName => {
-            const opponent = players.find(p => p.name === oppName);
-            return opponent ? opponent.score : 0.5; // Count 0.5 for unplayed games by opponents
-        });
-        
-        // Sort scores to remove highest and lowest
-        opponentScores.sort((a, b) => b - a);
-        
-        // Determine how many scores to trim from each end
-        const trimCount = currentRound >= 9 ? 2 : 1;
-        
-        // Remove the highest and lowest scores (or top/bottom 2 for 9+ rounds)
-        if (opponentScores.length > (trimCount * 2)) {
-            opponentScores = opponentScores.slice(trimCount, -trimCount);
-        }
-        
-        // Sum the remaining scores
-        player.buchholz = opponentScores.reduce((sum, score) => sum + score, 0);
-    });
-
-    // Sort players by primary (score) and secondary (buchholz) criteria
-    const sortedPlayers = [...players].sort((a, b) => {
-        if (b.score === a.score) {
-            return b.buchholz - a.buchholz;
-        }
-        return b.score - a.score;
-    });
-
-    // Display the sorted standings with tiebreaks
-    displayStandingsWithTiebreaks(sortedPlayers);
-}
-
-function displayStandingsWithTiebreaks(sortedPlayers) {
-    const list = document.getElementById('playersList');
-    list.innerHTML = sortedPlayers.map((player, index) => `
-        <div class="player ${player.withdrawn ? 'withdrawn' : ''}">
-            ${index + 1}. ${player.name} (${player.rating}) 
-            - Score: ${player.score} 
-            - Buchholz: ${player.buchholz.toFixed(1)}
-            ${currentRound === 0 ? `<button onclick="removePlayer('${player.name}')">Remove</button>` : ''}
-        </div>
-    `).join('');
-}
-        
-        function recordResult(pairingIndex, result) {
-            const pairing = currentPairings[pairingIndex];
+        function getGamePoints(pairing, playerId) {
+            if (!pairing.result) return 0;
             
-            if (!pairing.completed) {
-                if (result === 'bye') {
-                    const player = players.find(p => p.name === pairing.white.name);
-                    player.score += 1;
-                    player.colorHistory.push(1);
-                    player.colorBalance += 1;
-                } else {
-                    const white = players.find(p => p.name === pairing.white.name);
-                    const black = players.find(p => p.name === pairing.black.name);
+            switch(pairing.result) {
+                case 'white-win':
+                case 'black-forfeit':
+                    return pairing.white.id === playerId ? 1 : 0;
+                case 'black-win':
+                case 'white-forfeit':
+                    return pairing.black.id === playerId ? 1 : 0;
+                case 'draw':
+                    return 0.5;
+                case 'double-forfeit':
+                    return 0;
+                default:
+                    return 0;
+            }
+        }
 
-                    white.opponents.push(black.name);
-                    black.opponents.push(white.name);
+        function recordResult(pairingId, result) {
+            const pairing = pairings.find(p => p.id === pairingId);
+            if (!pairing) return;
+            
+            // If result already exists, we're correcting it - revert first
+            if (pairing.result) {
+                revertResult(pairing);
+            } else {
+                // First time recording - add colors and opponents
+                pairing.white.colors.push(0);
+                pairing.black.colors.push(1);
+                pairing.white.opponents.push(pairing.black.id);
+                pairing.black.opponents.push(pairing.white.id);
+            }
+            
+            pairing.result = result;
+            
+            // Apply new result
+            switch(result) {
+                case 'white-win':
+                    pairing.white.score += 1;
+                    pairing.white.wins++;
+                    pairing.black.losses++;
+                    break;
+                case 'black-win':
+                    pairing.black.score += 1;
+                    pairing.black.wins++;
+                    pairing.white.losses++;
+                    break;
+                case 'draw':
+                    pairing.white.score += 0.5;
+                    pairing.black.score += 0.5;
+                    pairing.white.draws++;
+                    pairing.black.draws++;
+                    break;
+                case 'white-forfeit':
+                    pairing.black.score += 1;
+                    pairing.black.wins++;
+                    pairing.white.losses++;
+                    break;
+                case 'black-forfeit':
+                    pairing.white.score += 1;
+                    pairing.white.wins++;
+                    pairing.black.losses++;
+                    break;
+                case 'double-forfeit':
+                    pairing.white.losses++;
+                    pairing.black.losses++;
+                    break;
+            }
+            
+            updateAllDisplays();
+        }
+        
+        function revertResult(pairing) {
+            if (!pairing.result) return;
+            
+            // Revert the previous result
+            switch(pairing.result) {
+                case 'white-win':
+                    pairing.white.score -= 1;
+                    pairing.white.wins--;
+                    pairing.black.losses--;
+                    break;
+                case 'black-win':
+                    pairing.black.score -= 1;
+                    pairing.black.wins--;
+                    pairing.white.losses--;
+                    break;
+                case 'draw':
+                    pairing.white.score -= 0.5;
+                    pairing.black.score -= 0.5;
+                    pairing.white.draws--;
+                    pairing.black.draws--;
+                    break;
+                case 'white-forfeit':
+                    pairing.black.score -= 1;
+                    pairing.black.wins--;
+                    pairing.white.losses--;
+                    break;
+                case 'black-forfeit':
+                    pairing.white.score -= 1;
+                    pairing.white.wins--;
+                    pairing.black.losses--;
+                    break;
+                case 'double-forfeit':
+                    pairing.white.losses--;
+                    pairing.black.losses--;
+                    break;
+            }
+        }
+        
+        function correctResult(pairingId) {
+            const pairing = pairings.find(p => p.id === pairingId);
+            if (!pairing || !pairing.result) return;
+            
+            const currentResult = formatResultForTable(pairing.result);
+            const newResult = prompt(`Current result: ${currentResult}\n\nEnter new result:\n1-0 (White wins)\n0-1 (Black wins)\n½-½ (Draw)\nW-F (White forfeit)\nB-F (Black forfeit)\nD-F (Double forfeit)`, currentResult);
+            
+            if (!newResult) return;
+            
+            let resultCode = '';
+            switch(newResult.toUpperCase()) {
+                case '1-0':
+                    resultCode = 'white-win';
+                    break;
+                case '0-1':
+                    resultCode = 'black-win';
+                    break;
+                case '½-½':
+                case '1/2-1/2':
+                case 'DRAW':
+                    resultCode = 'draw';
+                    break;
+                case 'W-F':
+                case 'WHITE FORFEIT':
+                    resultCode = 'white-forfeit';
+                    break;
+                case 'B-F':
+                case 'BLACK FORFEIT':
+                    resultCode = 'black-forfeit';
+                    break;
+                case 'D-F':
+                case 'DOUBLE FORFEIT':
+                    resultCode = 'double-forfeit';
+                    break;
+                default:
+                    alert('Invalid result format!');
+                    return;
+            }
+            
+            if (resultCode !== pairing.result) {
+                recordResult(pairingId, resultCode);
+            }
+        }
 
-                    white.colorHistory.push(1);
-                    black.colorHistory.push(-1);
-                    white.colorBalance += 1;
-                    black.colorBalance -= 1;
+        function formatResultForTable(result) {
+            const results = {
+                'white-win': '1-0',
+                'black-win': '0-1',
+                'draw': '½-½',
+                'white-forfeit': '0-1 (W-F)',
+                'black-forfeit': '1-0 (B-F)',
+                'double-forfeit': '0-0 (D-F)'
+            };
+            return results[result] || result;
+        }
 
-                    switch (result) {
-                        case 'white':
-                            white.score += 1;
-                            break;
-                        case 'black':
-                            black.score += 1;
-                            break;
-                        case 'draw':
-                            white.score += 0.5;
-                            black.score += 0.5;
-                            break;
+        function updateStandingsTable() {
+            const tbody = document.getElementById('standingsTableBody');
+            
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; font-style: italic; color: #666;">No players to display</td></tr>';
+                return;
+            }
+            
+            // Sort by score, wins, then alphabetically
+            const sortedPlayers = [...players].sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return a.name.localeCompare(b.name);
+            });
+            
+            tbody.innerHTML = sortedPlayers.map((player, index) => `
+                <tr>
+                    <td><strong>${index + 1}</strong></td>
+                    <td style="text-align: left; padding-left: 10px;">${player.name}</td>
+                    <td><strong>${player.score}</strong></td>
+                    <td>${player.wins}</td>
+                    <td>${player.draws}</td>
+                    <td>${player.losses}</td>
+                    <td>${player.byes}</td>
+                    <td><span class="status-${player.status}">${player.status.toUpperCase()}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateTournamentStats() {
+            const totalPlayers = players.length;
+            const activePlayers = players.filter(p => p.status === 'active').length;
+            const completedGames = pairings.filter(p => p.result && !p.bye).length;
+            
+            document.getElementById('totalPlayers').textContent = totalPlayers;
+            document.getElementById('activePlayers').textContent = activePlayers;
+            document.getElementById('currentRoundNum').textContent = currentRound;
+            document.getElementById('completedGames').textContent = completedGames;
+        }
+
+        function updateAllDisplays() {
+            updatePlayersTable();
+            updatePairingsTable();
+            updateStandingsTable();
+            updateTournamentStats();
+        }
+
+        function printPairings() {
+            // Get current tournament info
+            const tournamentName = document.getElementById('tournamentNameInput').value || 'Chess Tournament';
+            const arbiterName = document.getElementById('arbiterNameInput').value || '_________________';
+            const timeControl = document.getElementById('timeControlInput').value || 'G/90+30';
+            const tournamentDate = document.getElementById('tournamentDate').textContent;
+            
+            if (currentRound === 0) {
+                alert('No pairings to print!');
+                return;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            const pairingsTable = document.getElementById('pairingsTable').cloneNode(true);
+            
+            // Remove action buttons from print version
+            const resultCells = pairingsTable.querySelectorAll('.result-buttons');
+            resultCells.forEach(cell => {
+                const parent = cell.parentNode;
+                parent.innerHTML = '___________';
+            });
+            
+            // Remove correct buttons
+            const correctButtons = pairingsTable.querySelectorAll('button[onclick*="correctResult"]');
+            correctButtons.forEach(btn => btn.remove());
+            
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Round ${currentRound} Pairings</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; border: 2px solid #333; padding: 20px; }
+                        .header h1 { font-size: 24px; margin-bottom: 5px; }
+                        .tournament-info { font-size: 14px; margin: 5px 0; }
+                        .round-header { text-align: center; font-size: 18px; font-weight: bold; margin: 20px 0; padding: 10px; background: #333; color: white; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+                        th { background: #d6d6d6; font-weight: bold; }
+                        tr:nth-child(even) { background: #f9f9f9; }
+                        .bye-row { background: #fff3cd !important; font-weight: bold; }
+                        .player-col { text-align: left; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>SWISS SYSTEM CHESS TOURNAMENT</h1>
+                        <div class="tournament-info">
+                            <div><strong>Tournament:</strong> ${tournamentName}</div>
+                            <div><strong>Date:</strong> ${tournamentDate}</div>
+                            <div><strong>Arbiter:</strong> ${arbiterName}</div>
+                            <div><strong>Time Control:</strong> ${timeControl}</div>
+                        </div>
+                    </div>
+                    <div class="round-header">ROUND ${currentRound} PAIRINGS</div>
+                    ${pairingsTable.outerHTML}
+                    <br><br>
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>Arbiter Signature: _________________</div>
+                        <div>Date: _________________</div>
+                    </div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function printStandings() {
+            // Get current tournament info
+            const tournamentName = document.getElementById('tournamentNameInput').value || 'Chess Tournament';
+            const arbiterName = document.getElementById('arbiterNameInput').value || '_________________';
+            const timeControl = document.getElementById('timeControlInput').value || 'G/90+30';
+            const tournamentDate = document.getElementById('tournamentDate').textContent;
+            
+            const standingsTable = document.querySelector('.standings-table').cloneNode(true);
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Tournament Standings</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; border: 2px solid #333; padding: 20px; }
+                        .header h1 { font-size: 24px; margin-bottom: 5px; }
+                        .tournament-info { font-size: 14px; margin: 5px 0; }
+                        .standings-header { text-align: center; font-size: 18px; font-weight: bold; margin: 20px 0; padding: 10px; background: #333; color: white; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+                        th { background: #d6d6d6; font-weight: bold; }
+                        tr:nth-child(even) { background: #f9f9f9; }
+                        .name-col { text-align: left; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>SWISS SYSTEM CHESS TOURNAMENT</h1>
+                        <div class="tournament-info">
+                            <div><strong>Tournament:</strong> ${tournamentName}</div>
+                            <div><strong>Date:</strong> ${tournamentDate}</div>
+                            <div><strong>Arbiter:</strong> ${arbiterName}</div>
+                            <div><strong>Time Control:</strong> ${timeControl}</div>
+                        </div>
+                    </div>
+                    <div class="standings-header">TOURNAMENT STANDINGS AFTER ROUND ${currentRound}</div>
+                    ${standingsTable.outerHTML}
+                    <br><br>
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>Arbiter Signature: _________________</div>
+                        <div>Date: _________________</div>
+                    </div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function resetTournament() {
+            if (confirm('Reset entire tournament? This will clear all data.')) {
+                players = [];
+                currentRound = 0;
+                pairings = [];
+                tournamentHistory = [];
+                document.getElementById('pairingsSection').style.display = 'none';
+                updateAllDisplays();
+            }
+        }
+
+        // Enter key support
+        document.getElementById('playerName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addPlayer();
+            }
+        });
+
+        // Initialize
+        updateAllDisplays();
+        
+        // Additional utility functions for tournament management
+        
+        function exportTournamentData() {
+            const data = {
+                players: players,
+                currentRound: currentRound,
+                pairings: pairings,
+                tournamentHistory: tournamentHistory,
+                timestamp: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `tournament_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+        }
+        
+        function importTournamentData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (confirm('Import tournament data? This will overwrite current tournament.')) {
+                        players = data.players || [];
+                        currentRound = data.currentRound || 0;
+                        pairings = data.pairings || [];
+                        tournamentHistory = data.tournamentHistory || [];
+                        
+                        if (currentRound > 0) {
+                            document.getElementById('pairingsSection').style.display = 'block';
+                        }
+                        
+                        updateAllDisplays();
+                        alert('Tournament data imported successfully!');
+                    }
+                } catch (error) {
+                    alert('Error importing file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // Add crosstable generation
+        function generateCrosstable() {
+            if (players.length === 0) {
+                alert('No players to generate crosstable!');
+                return;
+            }
+            
+            const crosstableWindow = window.open('', '_blank');
+            const sortedPlayers = [...players].sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return a.name.localeCompare(b.name);
+            });
+            
+            let crosstableHTML = `
+                <html>
+                <head>
+                    <title>Tournament Crosstable</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+                        th { background: #e6e6e6; font-weight: bold; }
+                        .player-name { text-align: left; font-weight: bold; }
+                        .result-1 { background: #90EE90; } /* Win */
+                        .result-0 { background: #FFB6C1; } /* Loss */
+                        .result-05 { background: #FFFFE0; } /* Draw */
+                        .result-bye { background: #DDA0DD; } /* Bye */
+                    </style>
+                </head>
+                <body>
+                    <h1>Tournament Crosstable</h1>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Score</th>
+            `;
+            
+            // Add round headers
+            for (let round = 1; round <= currentRound; round++) {
+                crosstableHTML += `<th>R${round}</th>`;
+            }
+            crosstableHTML += `<th>Total</th></tr>`;
+            
+            // Add player rows
+            sortedPlayers.forEach((player, index) => {
+                crosstableHTML += `
+                    <tr>
+                        <td><strong>${index + 1}</strong></td>
+                        <td class="player-name">${player.name}</td>
+                        <td><strong>${player.score}</strong></td>
+                `;
+                
+                // Add results for each round
+                for (let round = 1; round <= currentRound; round++) {
+                    const roundHistory = tournamentHistory[round - 1];
+                    if (roundHistory) {
+                        const playerGame = roundHistory.find(pairing => 
+                            (pairing.white && pairing.white.id === player.id) ||
+                            (pairing.black && pairing.black.id === player.id) ||
+                            (pairing.bye && pairing.bye.id === player.id)
+                        );
+                        
+                        if (playerGame) {
+                            if (playerGame.bye) {
+                                crosstableHTML += `<td class="result-bye">BYE</td>`;
+                            } else {
+                                const isWhite = playerGame.white.id === player.id;
+                                const opponent = isWhite ? playerGame.black : playerGame.white;
+                                const opponentRank = sortedPlayers.findIndex(p => p.id === opponent.id) + 1;
+                                
+                                let result = '';
+                                let resultClass = '';
+                                
+                                if (!playerGame.result) {
+                                    result = `${opponentRank}*`;
+                                } else {
+                                    switch (playerGame.result) {
+                                        case 'white-win':
+                                            result = isWhite ? `${opponentRank}+` : `${opponentRank}-`;
+                                            resultClass = isWhite ? 'result-1' : 'result-0';
+                                            break;
+                                     A   case 'black-win':
+                                            result = isWhite ? `${opponentRank}-` : `${opponentRank}+`;
+                                            resultClass = isWhite ? 'result-0' : 'result-1';
+                                            break;
+                                        case 'draw':
+                                            result = `${opponentRank}=`;
+                                            resultClass = 'result-05';
+                                            break;
+                                        case 'white-forfeit':
+                                            result = isWhite ? `${opponentRank}F-` : `${opponentRank}F+`;
+                                            resultClass = isWhite ? 'result-0' : 'result-1';
+                                            break;
+                                        case 'black-forfeit':
+                                            result = isWhite ? `${opponentRank}F+` : `${opponentRank}F-`;
+                                            resultClass = isWhite ? 'result-1' : 'result-0';
+                                            break;
+                                        case 'double-forfeit':
+                                            result = `${opponentRank}FF`;
+                                            resultClass = 'result-0';
+                                            break;
+                                    }
+                                }
+                                
+                                crosstableHTML += `<td class="${resultClass}">${result}</td>`;
+                            }
+                        } else {
+                            crosstableHTML += `<td>-</td>`;
+                        }
+                    } else {
+                        crosstableHTML += `<td>-</td>`;
                     }
                 }
-
-                pairing.completed = true;
-                allResultsEntered = currentPairings.every(p => p.completed);
-                document.getElementById('generatePairingsBtn').disabled = !allResultsEntered;
-
-                displayPairings();
-                displayPlayers();
-            }
+                
+                crosstableHTML += `<td><strong>${player.score}</strong></td></tr>`;
+            });
+            
+            crosstableHTML += `
+                    </table>
+                    <br>
+                    <p><strong>Legend:</strong> + = Win, - = Loss, = = Draw, BYE = Bye, F = Forfeit, * = Game in progress</p>
+                    <p>Numbers indicate opponent's final ranking</p>
+                </body>
+                </html>
+            `;
+            
+            crosstableWindow.document.write(crosstableHTML);
+            crosstableWindow.document.close();
         }
     </script>
 </body>
